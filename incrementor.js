@@ -58,11 +58,11 @@
 	var numberDisplay = document.querySelector('#number');
 
 	stores.numberStore.listen(function(number) {
-	  numberDisplay.textContent = Number(numberDisplay.textContent) + number;
+	  numberDisplay.textContent = number;
 	});
 
 	/*
-	 * messy stuff in lieu of triggering actions with jsAction
+	 * messy stuff in lieu of triggering actions with jsAction...
 	 */
 
 	var actionsSelector = document.querySelector('#actions');
@@ -91,6 +91,7 @@
 	var reflux = __webpack_require__(4);
 	var actions = __webpack_require__(3);
 
+	//only one store this time, but general pattern
 	var stores = {
 	  numberStore: reflux.createStore({
 	    init: function() {
@@ -100,19 +101,19 @@
 	        this.listenTo(actions.decrement, this.decrement);
 	    },
 	    increment: function() {
-	      number++;
-	      this.trigger(1);
+	      this.number++;
+	      this.trigger(this.number); //payload should be cloned if non-serializable?
 	    },
 	    decrement: function() {
-	      number--;
-	      this.trigger(-1);
+	      this.number--;
+	      this.trigger(this.number);
 	    }
 	  })
 	}
 
 	// if there was another store we could listen to it here
-	// stores.numberStore.listen(function(stores.anotherStore) {
-	//     doSomething();
+	// stores.numberStore.listen(function(changedValue) {
+	//   doSomething(changedValue);
 	// });
 
 	module.exports = stores;
