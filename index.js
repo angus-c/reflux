@@ -1,0 +1,2 @@
+require('./lib/view.js');
+
