@@ -52,14 +52,23 @@
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var reflux = __webpack_require__(4);
-	var stores = __webpack_require__(2);
+	var reflux = __webpack_require__(5);
+	var numberStore = __webpack_require__(2);
+	var minmaxNumberStore = __webpack_require__(3);
 
 	var numberDisplay = document.querySelector('#number');
+	var minNumberDisplay = document.querySelector('#min');
+	var maxNumberDisplay = document.querySelector('#max');
 
-	stores.numberStore.listen(function(number) {
+	numberStore.listen(function(number) {
 	  numberDisplay.textContent = number;
 	});
+
+	minmaxNumberStore.listen(function(obj) {
+	  obj.lowest && (minNumberDisplay.textContent = obj.lowest);
+	  obj.highest && (maxNumberDisplay.textContent = obj.highest);
+	});
+
 
 	/*
 	 * messy stuff in lieu of triggering actions with jsAction...
@@ -69,7 +78,7 @@
 	var actionTrigger = document.querySelector('#actionTrigger');
 
 	//populate actions
-	var actions = __webpack_require__(3);
+	var actions = __webpack_require__(4);
 	Object.keys(actions).forEach(function(key) {
 	  var opt = document.createElement('OPTION');
 	  opt.text = opt.value = key;
@@ -88,35 +97,25 @@
 /* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var reflux = __webpack_require__(4);
-	var actions = __webpack_require__(3);
+	var reflux = __webpack_require__(5);
+	var actions = __webpack_require__(4);
 
-	//only one store this time, but general pattern
-	var stores = {
-	  numberStore: reflux.createStore({
-	    init: function() {
-	        this.number = 0;
+	var number = 0;
 
-	        this.listenTo(actions.increment, this.increment);
-	        this.listenTo(actions.decrement, this.decrement);
-	    },
-	    increment: function() {
-	      this.number++;
-	      this.trigger(this.number); //payload should be cloned if non-serializable?
-	    },
-	    decrement: function() {
-	      this.number--;
-	      this.trigger(this.number);
-	    }
-	  })
-	}
+	module.exports = reflux.createStore({
+	  init: function() {
+	      this.listenTo(actions.increment, this.increment);
+	      this.listenTo(actions.decrement, this.decrement);
+	  },
+	  increment: function() {
+	    this.trigger(++number); //payload should be cloned if non-serializable?
+	  },
+	  decrement: function() {
+	    this.trigger(--number);
+	  }
+	})
 
-	// if there was another store we could listen to it here
-	// stores.numberStore.listen(function(changedValue) {
-	//   doSomething(changedValue);
-	// });
 
-	module.exports = stores;
 
 
 
@@ -126,7 +125,45 @@
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var reflux = __webpack_require__(4);
+	var reflux = __webpack_require__(5);
+	var numberStore = __webpack_require__(2);
+
+	var lowest = 0;
+	var highest = 0;
+	var newLowest;
+	var newHighest;
+
+	var store = reflux.createStore({
+	  init: function() {
+	    numberStore.listen(detectMinMax);
+	  }
+	})
+
+	function detectMinMax(number) {
+	  newLowest = Math.min(number, lowest);
+	  newHighest = Math.max(number, highest);
+	  if(newLowest < lowest) {
+	    lowest = newLowest;
+	    store.trigger({lowest: lowest});
+	  }
+	  if(newHighest > highest) {
+	    highest = newHighest;
+	    store.trigger({highest: highest});
+	  }
+	}
+
+	module.exports = store;
+
+
+
+
+
+
+/***/ },
+/* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var reflux = __webpack_require__(5);
 
 	module.exports = reflux.createActions([
 	  "increment",
@@ -138,27 +175,27 @@
 
 
 /***/ },
-/* 4 */
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports.ListenerMethods = __webpack_require__(5);
+	exports.ListenerMethods = __webpack_require__(6);
 
-	exports.PublisherMethods = __webpack_require__(6);
+	exports.PublisherMethods = __webpack_require__(7);
 
-	exports.createAction = __webpack_require__(7);
+	exports.createAction = __webpack_require__(8);
 
-	exports.createStore = __webpack_require__(8);
+	exports.createStore = __webpack_require__(9);
 
-	exports.connect = __webpack_require__(9);
+	exports.connect = __webpack_require__(10);
 
-	exports.ListenerMixin = __webpack_require__(10);
+	exports.ListenerMixin = __webpack_require__(11);
 
-	exports.listenTo = __webpack_require__(11);
+	exports.listenTo = __webpack_require__(12);
 
-	exports.listenToMany = __webpack_require__(12);
+	exports.listenToMany = __webpack_require__(13);
 
 
-	var maker = __webpack_require__(13).staticJoinCreator;
+	var maker = __webpack_require__(14).staticJoinCreator;
 
 	exports.joinTrailing = exports.all = maker("last"); // Reflux.all alias for backward compatibility
 
@@ -187,7 +224,7 @@
 	 * Sets the eventmitter that Reflux uses
 	 */
 	exports.setEventEmitter = function(ctx) {
-	    var _ = __webpack_require__(14);
+	    var _ = __webpack_require__(15);
 	    _.EventEmitter = ctx;
 	};
 
@@ -195,22 +232,22 @@
 	 * Sets the method used for deferring actions and stores
 	 */
 	exports.nextTick = function(nextTick) {
-	    var _ = __webpack_require__(14);
+	    var _ = __webpack_require__(15);
 	    _.nextTick = nextTick;
 	};
 
 	/**
 	 * Provides the set of created actions and stores for introspection
 	 */
-	exports.__keep = __webpack_require__(15);
+	exports.__keep = __webpack_require__(16);
 
 
 /***/ },
-/* 5 */
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(14),
-	    maker = __webpack_require__(13).instanceJoinCreator;
+	var _ = __webpack_require__(15),
+	    maker = __webpack_require__(14).instanceJoinCreator;
 
 	/**
 	 * A module of methods related to listening.
@@ -383,10 +420,10 @@
 
 
 /***/ },
-/* 6 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(14);
+	var _ = __webpack_require__(15);
 
 	/**
 	 * A module of methods for object that you want to be able to listen to.
@@ -454,12 +491,12 @@
 
 
 /***/ },
-/* 7 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(14),
-	    Reflux = __webpack_require__(4),
-	    Keep = __webpack_require__(15),
+	var _ = __webpack_require__(15),
+	    Reflux = __webpack_require__(5),
+	    Keep = __webpack_require__(16),
 	    allowed = {preEmit:1,shouldEmit:1};
 
 	/**
@@ -501,12 +538,12 @@
 
 
 /***/ },
-/* 8 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(14),
-	    Reflux = __webpack_require__(4),
-	    Keep = __webpack_require__(15),
+	var _ = __webpack_require__(15),
+	    Reflux = __webpack_require__(5),
+	    Keep = __webpack_require__(16),
 	    allowed = {preEmit:1,shouldEmit:1};
 
 	/**
@@ -555,11 +592,11 @@
 
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Reflux = __webpack_require__(4),
-	    _ = __webpack_require__(14);
+	var Reflux = __webpack_require__(5),
+	    _ = __webpack_require__(15);
 
 	module.exports = function(listenable,key){
 	    return {
@@ -581,11 +618,11 @@
 
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(14),
-	    ListenerMethods = __webpack_require__(5);
+	var _ = __webpack_require__(15),
+	    ListenerMethods = __webpack_require__(6);
 
 	/**
 	 * A module meant to be consumed as a mixin by a React component. Supplies the methods from
@@ -602,10 +639,10 @@
 
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Reflux = __webpack_require__(4);
+	var Reflux = __webpack_require__(5);
 
 
 	/**
@@ -644,10 +681,10 @@
 
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Reflux = __webpack_require__(4);
+	var Reflux = __webpack_require__(5);
 
 	/**
 	 * A mixin factory for a React component. Meant as a more convenient way of using the `listenerMixin`,
@@ -683,7 +720,7 @@
 
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -691,7 +728,7 @@
 	 */
 
 	var slice = Array.prototype.slice,
-	    createStore = __webpack_require__(8),
+	    createStore = __webpack_require__(9),
 	    strategyMethodNames = {
 	        strict: "joinStrict",
 	        first: "joinLeading",
@@ -774,7 +811,7 @@
 
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -804,7 +841,7 @@
 	    return typeof value === 'function';
 	};
 
-	exports.EventEmitter = __webpack_require__(16);
+	exports.EventEmitter = __webpack_require__(17);
 
 	exports.nextTick = function(callback) {
 	    setTimeout(callback, 0);
@@ -835,7 +872,7 @@
 
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	exports.createdStores = [];
@@ -853,7 +890,7 @@
 
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
